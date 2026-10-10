@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="ur-PK">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Awaaz: Urdu AAC</title>
+<style>
+  :root{
+    --bg:#EAF4F4; --ink:#17323A; --panel:#FFFFFF; --line:#C9DDDF;
+    --people:#F6C945; --food:#F28C4B; --action:#5DB784; --feel:#E7799B; --thing:#6AA6E8;
+    --accent:#17323A;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:system-ui,"Noto Nastaliq Urdu","Segoe UI",sans-serif;font-size:18px;line-height:1.5}
+  header{display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between;padding:14px 20px;background:var(--panel);border-bottom:2px solid var(--line)}
+  h1{font-size:1.3rem;margin:0}
+  button{font:inherit;cursor:pointer;border:2px solid var(--ink);background:var(--panel);color:var(--ink);border-radius:12px;padding:10px 16px}
+  button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-visible{outline:4px solid #FFB000;outline-offset:2px}
+  button.main{background:var(--ink);color:#fff}
+  main{max-width:1000px;margin:0 auto;padding:16px}
+  #banner{display:none;background:#FFF1C2;border:2px solid #D9A400;border-radius:10px;padding:10px 14px;margin-bottom:12px}
+  #tray{min-height:88px;display:flex;flex-wrap:wrap;gap:8px;align-items:center;background:var(--panel);border:2px dashed var(--ink);border-radius:14px;padding:10px}
+  #tray .empty{opacity:.65}
+  .chip{display:flex;align-items:center;gap:6px;border-radius:999px;padding:6px 14px;font-size:1.3rem;border:2px solid var(--ink);background:#fff}
+  .actions{display:flex;gap:10px;margin:12px 0}
+  .actions .main{flex:1;font-size:1.2rem}
+  #options{display:grid;gap:10px;margin-bottom:6px}
+  .opt{text-align:center;padding:16px;font-size:1.7rem;border-width:3px;background:#fff}
+  .opt small{display:block;font-size:.9rem;opacity:.7;margin-top:2px}
+  #status{min-height:26px;font-size:.95rem;opacity:.8}
+  .tabs{display:flex;flex-wrap:wrap;gap:6px;margin:14px 0 8px}
+  .tabs button{padding:6px 12px;font-size:.95rem}
+  .tabs button.on{background:var(--ink);color:#fff}
+  #grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:10px}
+  .card{display:flex;flex-direction:column;align-items:center;gap:2px;padding:12px 6px;border-width:3px;background:#fff;border-radius:14px}
+  .card .e{font-size:2.4rem}
+  .card .u{font-size:1.4rem}
+  .card .r{font-size:.85rem;opacity:.75}
+  .card[data-cat=people]{border-color:var(--people)} .card[data-cat=food]{border-color:var(--food)}
+  .card[data-cat=action]{border-color:var(--action)} .card[data-cat=feel]{border-color:var(--feel)}
+  .card[data-cat=thing]{border-color:var(--thing)}
+  dialog{max-width:560px;width:92%;border:3px solid var(--ink);border-radius:16px;padding:20px}
+  dialog label{display:block;margin-top:12px;font-weight:600}
+  dialog input,dialog textarea,dialog select{width:100%;font:inherit;padding:8px;border:2px solid var(--line);border-radius:8px}
+  .row{display:flex;gap:8px;margin-top:14px;justify-content:flex-end}
+  .optw{display:flex;gap:8px}.optw .opt{flex:1}.sv{white-space:nowrap}#chip{font-size:.85rem;opacity:.8}
+  @media (prefers-reduced-motion:no-preference){.opt:active,.card:active{transform:scale(.97)}}
+</style>
+</head>
+<body>
+<header>
+  <h1>Awaaz: Urdu AAC</h1>
+  <div>
+    <button id="btnParent">Walidain ki settings</button>
+    <button id="btnAdd">Naya card</button> <button id="btnTest">Test</button> <span id="chip"></span>
+  </div>
+</header>
+
+<main>
+  <div id="banner"></div>
+  <div id="tray" aria-live="polite"></div>
+  <div class="actions">
+    <button class="main" id="btnMake">Jumla banao</button>
+    <button id="btnUndo">Wapas</button><button id="btnClear">Saaf karo</button>
+  </div>
+  <div id="options"></div>
+  <div id="status"></div>
+  <label><input type="checkbox" id="spk" checked> Har card bolna</label>
+  <div class="tabs" id="tabs"></div>
+  <div id="grid"></div>
+  <pre id="out" style="white-space:pre-wrap;font-size:.8rem"></pre>
+</main>
+
+<dialog id="dlgParent">
+  <h2>Walidain ki settings</h2>
+  <label>Bacha ya bachi ka naam<input id="pName"></label>
+  <label>Bacha hai ya bachi?
+    <select id="pGender"><option value="ladka">Ladka</option><option value="ladki">Ladki</option></select>
+  </label>
+  <label>Ghar ki baat (Roman Urdu mein likhein)
+    <textarea id="pContext" rows="5" placeholder="Hamza ammi ko Ammi aur abbu ko Abbu bulata hai. Dadi ke saath rehta hai. Kheer aur chai pasand hai. Bhai ka naam Ali hai."></textarea>
+  </label>
+  <label>AI model (Ollama ka naam)<input id="pModel" value="qwen3:4b"></label>
+  <p style="font-size:.85rem">Ye maloomat sirf is computer ke browser mein rehti hain.</p>
+  <div class="row"><button id="pDemo">Demo family</button><button id="pPrep">Awaazein tayyar karo</button><button id="pCancel">Band karo</button><button class="main" id="pSave">Save karo</button></div>
+</dialog>
+
+<dialog id="dlgAdd">
+  <h2>Naya card</h2>
+  <label>Roman Urdu mein lafz (jaise: kheer)<input id="aRoman"></label>
+  <label>Emoji (jaise: 🍚)<input id="aEmoji"></label>
+  <label>Category
+    <select id="aCat"><option value="people">Log</option><option value="food">Khana peena</option>
+    <option value="action">Kaam</option><option value="feel">Ehsaas</option><option value="thing">Cheezein</option></select>
+  </label>
+  <label>Urdu likhai (khali chhorein, AI bharega; aap theek kar saktay hain)<input id="aUrdu" dir="rtl" lang="ur"></label>
+  <div id="aMsg" style="margin-top:8px"></div>
+  <div class="row"><button id="aCancel">Band karo</button><button class="main" id="aSave">Card banao</button></div>
+</dialog>
+
+<script>
+const OLLAMA_NOTE="";
+const $=id=>document.getElementById(id);
+const el=(t,cls,txt)=>{const e=document.createElement(t);if(cls)e.className=cls;if(txt!=null)e.textContent=txt;return e};
+const CATS={all:"Sab",people:"Log",food:"Khana peena",action:"Kaam",feel:"Ehsaas",thing:"Cheezein"};
+const C=(roman,urdu,emoji,cat,alt=[])=>({roman,urdu,emoji,cat,alt});
+const DEFAULT_CARDS=[
+ C("mujhe","مجھے","🙋","action"),C("aur","اور","➕","action"),C("bas","بس","✋","action"),C("madad","مدد","🆘","action"),
+ C("ammi","امی","👩","people",["ami"]),C("abbu","ابو","👨","people",["abu"]),C("dadi","دادی","👵","people"),C("bhai","بھائی","🧒","people"),
+ C("chai","چائے","☕","food",["chaay"]),C("paani","پانی","💧","food",["pani"]),C("roti","روٹی","🫓","food"),C("doodh","دودھ","🥛","food",["dudh"]),
+ C("daal","دال","🍲","food",["dal"]),C("chawal","چاول","🍚","food"),C("paratha","پراٹھا","🥞","food",["parathe"]),C("biscuit","بسکٹ","🍪","food"),
+ C("chahiye","چاہیے","🙏","action",["chahie","chahta","chahti","chahiyen"]),C("khelna","کھیلنا","⚽","action",["khel"]),
+ C("jana","جانا","🚶","action",["jaana","jaata","jaati","jaa"]),C("sona","سونا","😴","action",["sone","soya","soti","neend"]),
+ C("khush","خوش","😊","feel"),C("udaas","اداس","😢","feel",["udas"]),C("dard","درد","🤕","feel"),C("bhook","بھوک","🍽️","feel"),
+ C("masjid","مسجد","🕌","thing"),C("ghar","گھر","🏠","thing"),C("school","اسکول","🏫","thing"),
+ C("washroom","واش روم","🚽","thing",["bathroom"]),C("dawai","دوائی","💊","thing",["dawa"]),
+ C("nahi","نہیں","❌","action",["nahin"]),C("haan","ہاں","✅","action",["han"])
+];
+let state=load(),picked=[],tab="all",audio;
+function load(){try{const s=JSON.parse(localStorage.getItem("awaaz2")||"null");if(s)return s;}catch(e){}
+ return {name:"",gender:"ladka",context:"",model:"qwen3:4b",cards:DEFAULT_CARDS,uses:{},saved:{}};}
+function save(){try{localStorage.setItem("awaaz2",JSON.stringify(state));}catch(e){}}
+function say(m){$("status").textContent=m}
+const q3=()=>/qwen3/i.test(state.model), nt=()=>q3()?"\n/no_think":"";
+
+/* ---------- voice ---------- */
+async function speak(text){
+ try{const r=await fetch("/api/tts?text="+encodeURIComponent(text));if(!r.ok)throw 0;
+  const a=new Audio(URL.createObjectURL(await r.blob()));if(audio)audio.pause();audio=a;await a.play();return;}catch(e){}
+ const u=new SpeechSynthesisUtterance(text);u.lang="ur-PK";const v=urduVoice();if(v)u.voice=v;
+ speechSynthesis.cancel();speechSynthesis.speak(u);
+}
+function urduVoice(){return speechSynthesis.getVoices().find(v=>v.lang.toLowerCase().startsWith("ur"))}
+async function health(){
+ const c=$("chip"),b=$("banner");let h=null;
+ try{h=await (await fetch("/api/health")).json();
+  const ok=h.models.some(m=>m===state.model||m.startsWith(state.model+":"));
+  c.textContent=(h.ollama?(ok?"AI tayyar":"Download karein: ollama pull "+state.model):"Ollama chalayein")+" | awaaz: "+h.tts;
+  if(h.ollama&&ok&&!health.warm){health.warm=1;chat([{role:"user",content:"ok"+nt()}]).catch(()=>{});}
+ }catch(e){c.textContent="python server.py chalayein (warna browser awaaz)";}
+ const noVoice=!urduVoice()&&(!h||h.tts==="browser only");
+ b.style.display=noVoice?"block":"none";
+ if(noVoice)b.textContent="Is device par Urdu awaaz nahi mili. pip install -r requirements.txt karke python server.py chalayein, warna jumle sirf likhe nazar ayenge.";
+}
+speechSynthesis.onvoiceschanged=health;
+
+/* ---------- cards ---------- */
+function renderTabs(){$("tabs").innerHTML="";
+ Object.entries(CATS).forEach(([k,v])=>{const b=el("button",k===tab?"on":null,v);
+  b.onclick=()=>{tab=k;renderTabs();renderGrid();};$("tabs").appendChild(b);});}
+function renderGrid(){$("grid").innerHTML="";
+ state.cards.filter(c=>tab==="all"||c.cat===tab).sort((a,b)=>(state.uses[b.roman]||0)-(state.uses[a.roman]||0)).forEach(c=>{
+  const b=el("button","card");b.dataset.cat=c.cat;
+  const u=el("span","u",c.urdu);u.dir="rtl";u.lang="ur";
+  b.append(el("span","e",c.emoji),u,el("span","r",c.roman));
+  b.onclick=()=>{if(picked.length<4){picked.push(c);renderTray();if($("spk").checked)speak(c.urdu);}};
+  $("grid").appendChild(b);});}
+function renderTray(){$("tray").innerHTML="";
+ if(!picked.length)$("tray").appendChild(el("span","empty","Neeche se 1 se 4 cards chunein"));
+ picked.forEach(c=>{const s=el("span","chip",c.emoji+" ");const u=el("span",null,c.urdu);u.dir="rtl";u.lang="ur";s.appendChild(u);$("tray").appendChild(s);});}
+$("btnClear").onclick=()=>{picked=[];$("options").innerHTML="";say("");renderTray();};
+$("btnUndo").onclick=()=>{picked.pop();renderTray();};
+
+/* ---------- LLM ---------- */
+async function chat(messages,schema){
+ const body={model:state.model,messages,stream:false,keep_alive:"30m",options:{temperature:0.2,num_ctx:2048},format:schema};
+ if(q3())body.think=false;
+ const post=u=>fetch(u,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)});
+ let r=await post("/api/chat");
+ if(r.status===404)r=await post("http://localhost:11434/api/chat");
+ if(!r.ok)throw new Error("Ollama ne "+r.status+" bheja");
+ return (await r.json()).message.content;
+}
+const SENTENCE_SCHEMA={type:"object",properties:{options:{type:"array",minItems:3,maxItems:3,
+ items:{type:"object",properties:{urdu:{type:"string"},roman:{type:"string"}},required:["urdu","roman"]}}},required:["options"]};
+const SYS="You help a non-speaking Pakistani child talk. Turn picture-card words into short, natural Urdu sentences in the first person, as the child would say them. Use the family details to pick the right names and relations. Use polite forms (aap) for elders. Keep each sentence under 10 words. Give exactly 3 different options: 1) a simple direct request, 2) a more polite version, 3) a short friendly version. Every pressed card must appear in every option. Never add needs, food, people or feelings the cards do not suggest. Write 'urdu' in Urdu script and 'roman' in Roman Urdu. Return JSON only.\n"+
+'Example (a different family): cards chai, ammi -> {"options":[{"urdu":"امی، مجھے چائے چاہیے۔","roman":"Ammi, mujhe chai chahiye."},{"urdu":"امی، کیا مجھے چائے مل سکتی ہے؟","roman":"Ammi, kya mujhe chai mil sakti hai?"},{"urdu":"امی، پلیز مجھے چائے دیں۔","roman":"Ammi, please mujhe chai dein."}]}\n'+
+'Example: cards nahi, roti -> {"options":[{"urdu":"مجھے روٹی نہیں چاہیے۔","roman":"Mujhe roti nahi chahiye."},{"urdu":"معاف کیجیے، مجھے روٹی نہیں چاہیے۔","roman":"Maaf kijiye, mujhe roti nahi chahiye."},{"urdu":"نہیں، روٹی نہیں۔","roman":"Nahi, roti nahi."}]}';
+function sentencePrompt(cards,fb){
+ const who=state.gender==="ladki"?"ek ladki (female speaker, use feminine verb forms)":"ek ladka (male speaker, use masculine verb forms)";
+ const ctx=`Bacha ka naam: ${state.name||"(nahi diya)"}. Bolne wala ${who}.\nGhar ki maloomat: ${state.context||"(koi nahi)"}`;
+ return [{role:"system",content:SYS},{role:"user",content:`${ctx}\nCards pressed in order: ${cards.map(c=>`${c.roman} (${c.urdu})`).join(", ")}${fb?"\nYour last answer was rejected: "+fb+" Fix it.":""}${nt()}`}];
+}
+function verify(opts,cards){
+ if(!Array.isArray(opts)||opts.length!==3)return "Exactly 3 options chahiye.";
+ const seen=new Set();
+ for(const [i,o] of opts.entries()){
+  const u=o.urdu||"",r=(o.roman||"").toLowerCase();
+  if(!/[\u0600-\u06FF]/.test(u))return `Option ${i+1} Urdu script mein nahi.`;
+  if(r.split(/\s+/).length>12)return `Option ${i+1} bohat lamba.`;
+  const miss=cards.filter(c=>!(r.includes(c.roman)||(c.alt||[]).some(a=>r.includes(a))||u.includes(c.urdu)));
+  if(miss.length)return `Option ${i+1} mein ye cards nahi: ${miss.map(c=>c.roman).join(", ")}.`;
+  if(seen.has(u))return "Options alag alag hon.";seen.add(u);}
+ return null;
+}
+async function generate(cards){
+ let fb="",attempts=0,opts=[];
+ while(attempts<3){attempts++;
+  try{opts=JSON.parse(await chat(sentencePrompt(cards,fb),SENTENCE_SCHEMA)).options;}catch(e){if(e.name!=="SyntaxError")throw e;fb="Return valid JSON only.";continue;}
+  fb=verify(opts,cards);if(!fb)return {opts,attempts,ok:true};}
+ if(!Array.isArray(opts)||!opts.length)throw new Error("Model ne theek jawab nahi diya");
+ return {opts,attempts,ok:false};
+}
+function addOpt(o,key,tag){
+ const w=el("div","optw"),b=el("button","opt");const u=el("span",null,o.urdu);u.dir="rtl";u.lang="ur";
+ b.append(u,el("small",null,(tag?tag+": ":"")+o.roman));
+ b.onclick=()=>{speak(o.urdu);picked.forEach(c=>state.uses[c.roman]=(state.uses[c.roman]||0)+1);save();renderGrid();};
+ const s=el("button","sv","⭐ Save");
+ s.onclick=()=>{const a=state.saved[key]=state.saved[key]||[];if(!a.some(x=>x.urdu===o.urdu)){a.push({urdu:o.urdu,roman:o.roman});save();}say("Save ho gaya.");};
+ w.append(b,s);$("options").appendChild(w);
+}
+$("btnMake").onclick=async()=>{
+ if(!picked.length){say("Pehle kuch cards chunein.");return;}
+ const key=picked.map(c=>c.roman).join("+");$("options").innerHTML="";
+ (state.saved[key]||[]).forEach(o=>addOpt(o,key,"Saved"));
+ say("Jumla ban raha hai...");const t0=performance.now();
+ try{const g=await generate(picked);
+  say(`Tayyar. ${state.model}, ${((performance.now()-t0)/1000).toFixed(1)} sec, koshish: ${g.attempts}`+(g.ok?"":". Dhyan: jaanch poori nahi hui, walidain dekh lein."));
+  g.opts.forEach(o=>addOpt(o,key,""));
+ }catch(e){say("Masla: "+e.message+". Check karein ke Ollama chal raha hai aur model download ho chuka hai.");}
+};
+
+/* ---------- add card (parent can fix the Urdu spelling) ---------- */
+$("btnAdd").onclick=()=>$("dlgAdd").showModal();
+$("aCancel").onclick=()=>$("dlgAdd").close();
+$("aSave").onclick=async()=>{
+ const roman=$("aRoman").value.trim().toLowerCase(),emoji=$("aEmoji").value.trim()||"⭐";
+ if(!roman){$("aMsg").textContent="Lafz likhein.";return;}
+ let urdu=$("aUrdu").value.trim();
+ try{
+  if(!urdu){$("aMsg").textContent="Urdu likhai ban rahi hai...";
+   urdu=JSON.parse(await chat([{role:"system",content:"Convert the Roman Urdu word into correct Urdu script. Return JSON only."},{role:"user",content:roman+nt()}],
+    {type:"object",properties:{urdu:{type:"string"}},required:["urdu"]})).urdu;
+   $("aUrdu").value=urdu;$("aMsg").textContent="Spelling check karke dobara 'Card banao' dabayen.";return;}
+  if(!/[\u0600-\u06FF]/.test(urdu)){$("aMsg").textContent="Urdu script mein likhein.";return;}
+  state.cards.push({roman,urdu,emoji,cat:$("aCat").value,alt:[]});save();renderGrid();
+  ["aRoman","aEmoji","aUrdu"].forEach(i=>$(i).value="");$("aMsg").textContent="";$("dlgAdd").close();
+ }catch(e){$("aMsg").textContent="Masla: "+e.message;}
+};
+
+/* ---------- parent settings ---------- */
+$("btnParent").onclick=()=>{$("pName").value=state.name;$("pGender").value=state.gender;$("pContext").value=state.context;$("pModel").value=state.model;$("dlgParent").showModal();};
+$("pCancel").onclick=()=>$("dlgParent").close();
+$("pDemo").onclick=()=>{$("pName").value="Ayaan";$("pGender").value="ladka";$("pContext").value="Ayaan ammi ko Ammi aur abbu ko Abbu bulata hai. Dadi ke saath rehta hai. Bhai ka naam Hamza hai. Daal chawal aur chai rusk pasand hai.";};
+$("pPrep").onclick=async()=>{let n=0;say("Awaazein tayyar ho rahi hain...");
+ for(const c of state.cards){try{if((await fetch("/api/tts?text="+encodeURIComponent(c.urdu))).ok)n++;}catch(e){}}
+ say(`${n}/${state.cards.length} awaazein tayyar.`);$("dlgParent").close();};
+$("pSave").onclick=()=>{state.name=$("pName").value.trim();state.gender=$("pGender").value;state.context=$("pContext").value.trim();
+ state.model=$("pModel").value.trim()||"qwen3:4b";save();$("dlgParent").close();health();};
+
+/* ---------- self-test: run once per model, paste the table into the README ---------- */
+const CASES=[["chai","ammi"],["roti","abbu"],["paani"],["bhook","chawal"],["dard","ammi"],["masjid","abbu"],["khelna","ghar"],["nahi","roti"],["mujhe","madad"],["dard","paani","ammi"]];
+$("btnTest").onclick=async()=>{
+ const rows=["| Model | Cards | Tries | Verified | Sec | Option 1 | Urdu OK (human) |","|---|---|---|---|---|---|---|"];
+ $("out").textContent="Test chal raha hai...";
+ for(const names of CASES){
+  const cards=names.map(n=>state.cards.find(c=>c.roman===n)).filter(Boolean),t=performance.now();let g;
+  try{g=await generate(cards);}catch(e){g={attempts:0,ok:false,opts:[{urdu:"ERROR "+e.message}]};}
+  rows.push(`| ${state.model} | ${names.join("+")} | ${g.attempts} | ${g.ok?"yes":"no"} | ${((performance.now()-t)/1000).toFixed(1)} | ${g.opts[0].urdu} | |`);
+  $("out").textContent=rows.join("\n");}
+};
+
+renderTabs();renderGrid();renderTray();health();
+</script>
+</body>
+</html>
